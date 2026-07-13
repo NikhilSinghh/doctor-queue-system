@@ -1,0 +1,34 @@
+{
+    "success": true,
+    "bestModel": "gradient_boosting",
+    "trainingSamples": 600,
+    "metrics": {
+        "linear_regression": {
+            "mae": 1.1598267832927114,
+            "rmse": 1.3436169609709274,
+            "r2": 0.37141122063762655
+        },
+        "random_forest": {
+            "mae": 1.1641092129629622,
+            "rmse": 1.357347559698583,
+            "r2": 0.35849831361177553
+        },
+        "gradient_boosting": {
+            "mae": 1.099413482550156,
+            "rmse": 1.2882809841645222,
+            "r2": 0.42212106703874497
+        }
+    },
+    "features": [
+        "queuePosition",
+        "weekday",
+        "month",
+        "holidayFlag",
+        "peakHourFlag",
+        "doctorDelay",
+        "lunchDelay",
+        "emergencyDelay",
+        "walkInsBefore",
+        "cancelledBefore"
+    ]
+}

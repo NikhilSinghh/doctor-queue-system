@@ -1,0 +1,255 @@
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+const ConsultationHistory = require('../models/ConsultationHistory');
+const Doctor = require('../models/Doctor');
+const Appointment = require('../models/Appointment');
+const Queue = require('../models/Queue');
+
+// Run offline Python prediction
+const runPythonPrediction = async (inputData) => {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/predict', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(inputData),
+    });
+    if (!response.ok) {
+      console.warn(`FastAPI Prediction returned status ${response.status}. Falling back.`);
+      return null;
+    }
+    const result = await response.json();
+    if (result.success) {
+      return result.prediction;
+    } else {
+      console.error('FastAPI ML execution error:', result.error);
+      return null;
+    }
+  } catch (err) {
+    console.warn('FastAPI Prediction service connection failed. Falling back to baseline calculations.', err.message);
+    return null;
+  }
+};
+
+// Calculate Weighted Moving Average (WMA)
+const calculateWMA = (history, count = 20) => {
+  if (history.length === 0) return 7;
+  const subset = history.slice(-count);
+  let weightedSum = 0;
+  let weightSum = 0;
+
+  subset.forEach((record, index) => {
+    const weight = index + 1; // Later consultations get higher weight
+    weightedSum += record.consultationDuration * weight;
+    weightSum += weight;
+  });
+
+  return weightedSum / weightSum;
+};
+
+// Main Smart Queue Engine Logic
+const updateQueuePredictions = async (doctorId, dateStr, ioInstance = null) => {
+  try {
+    const startOfDay = new Date(dateStr);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(dateStr);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) throw new Error('Doctor not found');
+
+    // Fetch daily queue doc or create one
+    let queue = await Queue.findOne({ doctorId, date: { $gte: startOfDay, $lte: endOfDay } });
+    if (!queue) {
+      queue = new Queue({
+        doctorId,
+        date: startOfDay,
+        currentServingNumber: 0,
+        currentQueueLength: 0,
+        estimatedAverageTime: doctor.consultationDurationDefault,
+      });
+    }
+
+    // Fetch active appointments (Waiting/Consulting)
+    const appointments = await Appointment.find({
+      doctorId,
+      appointmentDate: { $gte: startOfDay, $lte: endOfDay },
+      status: { $in: ['Waiting', 'Consulting'] },
+    }).sort({ queueNumber: 1 });
+
+    // Fetch total completed consultations for this doctor to determine hybrid prediction stage
+    const completedCount = await ConsultationHistory.countDocuments({ doctorId });
+    const historyRecords = await ConsultationHistory.find({ doctorId }).sort({ createdAt: 1 });
+
+    let stage = 1;
+    let fallbackWMA = doctor.consultationDurationDefault;
+
+    if (completedCount >= 500) {
+      stage = 4; // Auto best ML
+    } else if (completedCount >= 100) {
+      stage = 3; // ML training active
+    } else if (completedCount >= 20) {
+      stage = 2; // WMA
+    }
+
+    if (completedCount >= 20) {
+      fallbackWMA = calculateWMA(historyRecords, 20);
+    }
+
+    queue.estimatedAverageTime = fallbackWMA; // Display WMA on queue details
+    queue.currentQueueLength = appointments.filter(a => a.status === 'Waiting').length;
+
+    // We calculate wait times starting from now
+    let currentTime = new Date();
+    if (currentTime < startOfDay) {
+      // If clinic has not opened yet, start predictions from clinic open time
+      const [openHour, openMin] = doctor.hospitalOpeningTime.split(':').map(Number);
+      currentTime = new Date(startOfDay);
+      currentTime.setHours(openHour, openMin, 0, 0);
+    }
+
+    // Parse lunch hour limits
+    const [lunchStartHour, lunchStartMin] = doctor.lunchStart.split(':').map(Number);
+    const [lunchEndHour, lunchEndMin] = doctor.lunchEnd.split(':').map(Number);
+    const lunchStart = new Date(startOfDay);
+    lunchStart.setHours(lunchStartHour, lunchStartMin, 0, 0);
+    const lunchEnd = new Date(startOfDay);
+    lunchEnd.setHours(lunchEndHour, lunchEndMin, 0, 0);
+
+    let nextAvailableTime = new Date(currentTime);
+
+    // Apply reported doctor delay to opening time if doctor hasn't arrived
+    if (queue.doctorDelay > 0 && queue.currentServingNumber === 0) {
+      nextAvailableTime = new Date(nextAvailableTime.getTime() + queue.doctorDelay * 60000);
+    }
+
+    // Feature accumulators for ML predictions
+    let walkInsBeforeCount = 0;
+    let cancelledBeforeCount = 0;
+
+    // Fetch today's cancelled appointments
+    const cancelledTodayCount = await Appointment.countDocuments({
+      doctorId,
+      appointmentDate: { $gte: startOfDay, $lte: endOfDay },
+      status: 'Cancelled',
+    });
+
+    const activeList = [];
+
+    for (let index = 0; index < appointments.length; index++) {
+      const appt = appointments[index];
+      const positionInLine = index + 1;
+
+      // Stage-specific Prediction Duration
+      let predictedDuration = doctor.consultationDurationDefault;
+
+      if (appt.status === 'Consulting' && appt.actualConsultationStart) {
+        // If already consulting, estimate remaining time based on start
+        const elapsedMin = (new Date().getTime() - new Date(appt.actualConsultationStart).getTime()) / 60000;
+        predictedDuration = Math.max(1, doctor.consultationDurationDefault - elapsedMin);
+      } else {
+        if (stage === 1) {
+          predictedDuration = doctor.consultationDurationDefault;
+        } else if (stage === 2) {
+          predictedDuration = fallbackWMA;
+        } else {
+          // Stage 3 & 4: Python ML Prediction
+          const nowHour = nextAvailableTime.getHours();
+          const peakHourFlag = [10, 11, 12, 16, 17].includes(nowHour) ? 1 : 0;
+          const holidayFlag = doctor.specialHolidays.some(h => h.toDateString() === startOfDay.toDateString()) ? 1 : 0;
+
+          const features = {
+            queuePosition: positionInLine,
+            weekday: startOfDay.getDay(),
+            month: startOfDay.getMonth() + 1,
+            holidayFlag,
+            peakHourFlag,
+            doctorDelay: queue.doctorDelay,
+            lunchDelay: queue.lunchDelay,
+            emergencyDelay: appt.priority === 'Emergency' ? 20 : 0, // emergency duration buffer
+            walkInsBefore: walkInsBeforeCount,
+            cancelledBefore: cancelledTodayCount, // today's cumulative cancellations
+            doctorConfiguredDefault: doctor.consultationDurationDefault,
+          };
+
+          const mlPred = await runPythonPrediction(features);
+          predictedDuration = mlPred !== null ? mlPred : fallbackWMA;
+        }
+      }
+
+      // Check for lunch break shift
+      // If expected consultation start time lands within lunch hours, move patient start to after lunch
+      if (nextAvailableTime >= lunchStart && nextAvailableTime < lunchEnd) {
+        nextAvailableTime = new Date(lunchEnd.getTime());
+      }
+
+      // Record expected times
+      let apptPredictedStartTime = new Date(nextAvailableTime);
+      let apptWaitingTime = Math.max(0, Math.round((apptPredictedStartTime.getTime() - currentTime.getTime()) / 60000));
+
+      appt.predictedConsultationTime = apptPredictedStartTime;
+      appt.predictedWaitingTime = apptWaitingTime;
+      await appt.save();
+
+      // Accumulate for next patient
+      nextAvailableTime = new Date(apptPredictedStartTime.getTime() + predictedDuration * 60000);
+
+      if (appt.priority === 'Walk-in') {
+        walkInsBeforeCount++;
+      }
+
+      activeList.push({
+        appointmentId: appt._id,
+        queueNumber: appt.queueNumber,
+        priority: appt.priority,
+        status: appt.status,
+      });
+    }
+
+    queue.activePatients = activeList;
+    await queue.save();
+
+    // Broadcast update via socket
+    if (ioInstance) {
+      ioInstance.emit('queueUpdated', {
+        doctorId,
+        date: queue.date,
+        currentServingNumber: queue.currentServingNumber,
+        queueLength: queue.currentQueueLength,
+        activePatients: queue.activePatients,
+        estimatedAverageTime: queue.estimatedAverageTime,
+        doctorDelay: queue.doctorDelay,
+      });
+    }
+
+    return queue;
+  } catch (error) {
+    console.error('Queue Engine update failure:', error);
+    throw error;
+  }
+};
+
+// Check for training criteria & trigger Python training script
+const checkAndTrainModel = async () => {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/train', {
+      method: 'POST',
+    });
+    if (!response.ok) {
+      return { success: false, error: `FastAPI Train returned status ${response.status}` };
+    }
+    return await response.json();
+  } catch (err) {
+    console.warn('FastAPI Train service connection failed.', err.message);
+    return { success: false, error: err.message };
+  }
+};
+
+module.exports = {
+  updateQueuePredictions,
+  checkAndTrainModel,
+  calculateWMA,
+};

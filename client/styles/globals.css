@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background-light text-slate-800 transition-colors duration-300 font-sans;
+  }
+  body.dark {
+    @apply bg-background-dark text-slate-100;
+  }
+}
+
+/* Custom Neumorphism Utilities */
+.neu-flat {
+  @apply bg-white shadow-neumorphic-flat border border-white/50 rounded-large transition-all duration-300;
+}
+.dark .neu-flat {
+  @apply bg-slate-800 shadow-neumorphic-flat-dark border-slate-700/50;
+}
+
+.neu-pressed {
+  @apply bg-white shadow-neumorphic-pressed rounded-medium transition-all duration-300;
+}
+.dark .neu-pressed {
+  @apply bg-slate-800 shadow-neumorphic-pressed-dark;
+}
+
+.neu-btn {
+  @apply bg-white hover:bg-slate-50 active:shadow-neumorphic-pressed shadow-neumorphic-flat text-slate-700 font-medium px-6 py-3 rounded-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primaryBlue/40;
+}
+.dark .neu-btn {
+  @apply bg-slate-800 hover:bg-slate-700/80 active:shadow-neumorphic-pressed-dark shadow-neumorphic-flat-dark text-slate-200 focus:ring-primaryBlue/20;
+}
+
+.neu-input {
+  @apply bg-white border border-slate-200/60 shadow-neumorphic-pressed focus:shadow-neumorphic-flat text-slate-700 px-4 py-3 rounded-medium outline-none transition-all duration-200 focus:ring-2 focus:ring-primaryBlue/30;
+}
+.dark .neu-input {
+  @apply bg-slate-800 border-slate-700 shadow-neumorphic-pressed-dark focus:shadow-neumorphic-flat-dark text-slate-100 focus:ring-primaryBlue/20;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300/80 rounded-full;
+}
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-slate-700;
+}
+
+/* Override padding-left for inputs with decorative prefix icons */
+.pl-icon-input {
+  padding-left: 2.75rem !important;
+}
