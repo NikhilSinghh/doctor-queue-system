@@ -40,6 +40,7 @@ interface QueueData {
   queueList: QueueItem[];
   lunchStart: string;
   lunchEnd: string;
+  date?: string;
 }
 
 interface StoreState {
