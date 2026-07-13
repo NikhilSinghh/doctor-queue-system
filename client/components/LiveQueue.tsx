@@ -4,15 +4,15 @@ import { Sparkles, Activity, ShieldCheck } from 'lucide-react';
 
 interface QueueItem {
   appointmentId: string;
-  queueNumber: number | null;
+  queueNumber?: number | null;
   priority: 'Routine' | 'Walk-in' | 'Emergency';
   status: 'Waiting' | 'Consulting' | 'Completed' | 'Cancelled';
-  isMine: boolean;
+  isMine?: boolean;
   avatarSeed: string;
 }
 
 interface LiveQueueProps {
-  queueList: QueueItem[];
+  queueList: any[];
   currentServingNumber: number;
 }
 
