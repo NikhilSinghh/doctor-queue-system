@@ -206,7 +206,7 @@ export default function AnalyticsDashboard() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {statusPieData.map((entry, index) => (
+                      {statusPieData.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -215,7 +215,7 @@ export default function AnalyticsDashboard() {
                 </ResponsiveContainer>
               </div>
               <div className="space-y-2.5">
-                {statusPieData.map((item, idx) => (
+                {statusPieData.map((item: any, idx: number) => (
                   <div key={item.name} className="flex items-center space-x-2">
                     <div className="w-3.5 h-3.5 rounded" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                     <span className="font-semibold text-slate-600 dark:text-slate-300">{item.name}: {item.value}%</span>
