@@ -122,13 +122,13 @@ export const useStore = create<StoreState>((set) => {
 });
 
 export const getApiUrl = (path: string) => {
-  const productionUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (productionUrl) {
-    const baseUrl = productionUrl.endsWith('/') ? productionUrl.slice(0, -1) : productionUrl;
-    return `${baseUrl}${path}`;
-  }
+  const productionUrl = process.env.NEXT_PUBLIC_API_URL || 'https://doctor-queue-backend-1eka.onrender.com';
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      const baseUrl = productionUrl.endsWith('/') ? productionUrl.slice(0, -1) : productionUrl;
+      return `${baseUrl}${path}`;
+    }
     return `http://${hostname}:5000${path}`;
   }
   return `http://localhost:5000${path}`;

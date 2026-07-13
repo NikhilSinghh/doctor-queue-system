@@ -8,15 +8,11 @@ import { useStore } from '../store/useStore';
 // Global axios rewrite for mobile/local network compatibility
 if (typeof window !== 'undefined') {
   axios.interceptors.request.use((config) => {
-    const productionUrl = process.env.NEXT_PUBLIC_API_URL;
+    // Hardcode the default fallback to the live Render backend
+    const productionUrl = process.env.NEXT_PUBLIC_API_URL || 'https://doctor-queue-backend-1eka.onrender.com';
     if (config.url && config.url.includes('localhost:5000')) {
-      if (productionUrl) {
-        const baseUrl = productionUrl.endsWith('/') ? productionUrl.slice(0, -1) : productionUrl;
-        config.url = config.url.replace('http://localhost:5000', baseUrl);
-      } else {
-        const hostname = window.location.hostname;
-        config.url = config.url.replace('localhost:5000', `${hostname}:5000`);
-      }
+      const baseUrl = productionUrl.endsWith('/') ? productionUrl.slice(0, -1) : productionUrl;
+      config.url = config.url.replace('http://localhost:5000', baseUrl);
     }
     return config;
   });
