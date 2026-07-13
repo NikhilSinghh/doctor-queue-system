@@ -12,7 +12,11 @@ const connectDB = async () => {
     console.warn(`Connection failed: ${error.message}. Initializing in-memory fallback database...`);
     try {
       const { MongoMemoryServer } = require('mongodb-memory-server');
-      const mongoServer = await MongoMemoryServer.create();
+      const mongoServer = await MongoMemoryServer.create({
+        binary: {
+          version: '7.0.3'
+        }
+      });
       const mongoUri = mongoServer.getUri();
       
       process.env.MONGO_URI = mongoUri; // Pass to child processes
