@@ -77,7 +77,9 @@ export default function PatientDashboard() {
   const myApptTime = myQueueItem?.predictedConsultationTime 
     ? new Date(myQueueItem.predictedConsultationTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '--:--';
-  const myWaitingTime = myQueueItem?.predictedWaitingTime !== undefined ? myQueueItem.predictedWaitingTime : '--';
+  const myWaitingTime = (myQueueItem?.predictedWaitingTime !== undefined && myQueueItem?.predictedWaitingTime !== null) 
+    ? myQueueItem.predictedWaitingTime 
+    : null;
 
   return (
     <Layout>
@@ -150,8 +152,8 @@ export default function PatientDashboard() {
               <div className="space-y-1">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Est. Waiting Time</p>
                 <p className="text-3xl font-extrabold text-slate-700 dark:text-slate-300 flex items-baseline justify-center sm:justify-start">
-                  <span>{myWaitingTime}</span>
-                  {myWaitingTime !== '--' && <span className="text-xs font-bold text-slate-400 ml-1">mins</span>}
+                  <span>{myWaitingTime !== null ? myWaitingTime : '--'}</span>
+                  {myWaitingTime !== null && <span className="text-xs font-bold text-slate-400 ml-1">mins</span>}
                 </p>
                 <p className="text-[10px] text-slate-400">Predicted duration speed</p>
               </div>
@@ -182,7 +184,7 @@ export default function PatientDashboard() {
                 </select>
               </div>
 
-              {myWaitingTime !== '--' && (
+              {myWaitingTime !== null && (
                 <div className="flex-1 w-full md:w-auto text-right">
                   {myWaitingTime <= localTravelTime ? (
                     <div className="p-2.5 bg-rose-500/10 text-rose-500 rounded border border-rose-500/20 text-xs font-bold text-center md:text-left flex items-center justify-center space-x-1 animate-pulse">
