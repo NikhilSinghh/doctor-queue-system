@@ -122,6 +122,11 @@ export const useStore = create<StoreState>((set) => {
 });
 
 export const getApiUrl = (path: string) => {
+  const productionUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (productionUrl) {
+    const baseUrl = productionUrl.endsWith('/') ? productionUrl.slice(0, -1) : productionUrl;
+    return `${baseUrl}${path}`;
+  }
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     return `http://${hostname}:5000${path}`;
