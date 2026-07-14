@@ -248,8 +248,52 @@ const checkAndTrainModel = async () => {
   }
 };
 
+const getDynamicDoctorStatus = (doctor, targetDate = new Date()) => {
+  // 1. Holiday Check
+  const dateStr = targetDate.toISOString().split('T')[0];
+  const isHoliday = doctor.specialHolidays && doctor.specialHolidays.some(h => {
+    return new Date(h).toISOString().split('T')[0] === dateStr;
+  });
+  if (isHoliday) return 'Holiday';
+
+  // 2. Weekly Off Check
+  const dayOfWeek = targetDate.getDay();
+  if (doctor.weeklyOff && doctor.weeklyOff.includes(dayOfWeek)) return 'Week Off';
+
+  // 3. Time-based checks (only apply if targetDate is TODAY)
+  const isToday = new Date().toDateString() === targetDate.toDateString();
+  if (isToday) {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Parse Opening/Closing hours
+    const [openHour, openMin] = (doctor.hospitalOpeningTime || '09:00').split(':').map(Number);
+    const [closeHour, closeMin] = (doctor.hospitalClosingTime || '17:00').split(':').map(Number);
+    const openMinutes = openHour * 60 + openMin;
+    const closeMinutes = closeHour * 60 + closeMin;
+
+    // Parse Lunch hour
+    const [lunchStartHour, lunchStartMin] = (doctor.lunchStart || '13:00').split(':').map(Number);
+    const [lunchEndHour, lunchEndMin] = (doctor.lunchEnd || '14:00').split(':').map(Number);
+    const lunchStartMinutes = lunchStartHour * 60 + lunchStartMin;
+    const lunchEndMinutes = lunchEndHour * 60 + lunchEndMin;
+
+    if (currentMinutes < openMinutes || currentMinutes > closeMinutes) {
+      return 'Clinic Closed';
+    }
+
+    if (currentMinutes >= lunchStartMinutes && currentMinutes < lunchEndMinutes) {
+      return 'Lunch Break';
+    }
+  }
+
+  // 4. Default to manual status
+  return doctor.status || 'Available';
+};
+
 module.exports = {
   updateQueuePredictions,
   checkAndTrainModel,
   calculateWMA,
+  getDynamicDoctorStatus,
 };

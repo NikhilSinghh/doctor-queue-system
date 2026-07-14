@@ -3,7 +3,7 @@ const Doctor = require('../models/Doctor');
 const Queue = require('../models/Queue');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
-const { updateQueuePredictions } = require('../services/queueEngine');
+const { updateQueuePredictions, getDynamicDoctorStatus } = require('../services/queueEngine');
 
 // Book Appointment
 const bookAppointment = async (req, res) => {
@@ -319,7 +319,7 @@ const getPublicQueue = async (req, res) => {
       success: true,
       data: {
         doctorId: queue.doctorId,
-        doctorStatus: doctor.status,
+        doctorStatus: getDynamicDoctorStatus(doctor, targetDate),
         currentServingNumber: queue.currentServingNumber,
         currentQueueLength: queue.currentQueueLength,
         estimatedAverageTime: queue.estimatedAverageTime,

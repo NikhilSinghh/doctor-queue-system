@@ -9,7 +9,7 @@ const ConsultationHistory = require('../models/ConsultationHistory');
 const Settings = require('../models/Settings');
 const Notification = require('../models/Notification');
 const AuditLog = require('../models/AuditLog');
-const { updateQueuePredictions, checkAndTrainModel } = require('../services/queueEngine');
+const { updateQueuePredictions, checkAndTrainModel, getDynamicDoctorStatus } = require('../services/queueEngine');
 
 // Create Audit Log Entry
 const logAudit = async (userId, action, details, req) => {
@@ -111,7 +111,7 @@ const getLiveQueue = async (req, res) => {
       success: true,
       data: {
         doctorId: queue.doctorId,
-        doctorStatus: doctor.status,
+        doctorStatus: getDynamicDoctorStatus(doctor, targetDate),
         currentServingNumber: queue.currentServingNumber,
         currentQueueLength: queue.currentQueueLength,
         estimatedAverageTime: queue.estimatedAverageTime,
