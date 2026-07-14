@@ -301,9 +301,9 @@ export default function Home() {
           <div className="lg:col-span-7">
             <div className="neu-flat p-4 bg-white dark:bg-slate-800 rounded-large shadow-md">
               <div className="h-[280px] w-full rounded-medium overflow-hidden border border-slate-200 dark:border-slate-700 relative">
-                {/* Embed Map Iframe pointing to Varanasi Brij Enclave Sundarpur */}
+                {/* Embed Map Iframe pointing directly to Aasha Neurology Centre Dr. Avinash Singh */}
                 <iframe 
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3608.2721868352654!2d82.98064567597148!3d25.278278277659424!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x398e318ca4cf0421%3A0xe1ab75cbd67a9c9e!2sAsha%20Neurology%20Center!5e0!3m2!1sen!2sin!4v1720790000000!5m2!1sen!2sin" 
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3608.0645839794025!2d82.98074957597171!3d25.286265077660233!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x398e2dd2c3feaf6d%3A0xed94cd7c98c9575!2sAasha%20Neurology%20Centre%20Dr.%20Avinash%20Singh!5e0!3m2!1sen!2sin!4v1720791000000!5m2!1sen!2sin" 
                   width="100%" 
                   height="100%" 
                   style={{ border: 0 }} 
