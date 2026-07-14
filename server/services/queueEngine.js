@@ -106,14 +106,14 @@ const updateQueuePredictions = async (doctorId, dateStr, ioInstance = null) => {
     let currentTime = new Date();
     if (currentTime < startOfDay) {
       // If clinic has not opened yet, start predictions from clinic open time
-      const [openHour, openMin] = doctor.hospitalOpeningTime.split(':').map(Number);
+      const [openHour, openMin] = (doctor.hospitalOpeningTime || '09:00').split(':').map(Number);
       currentTime = new Date(startOfDay);
       currentTime.setHours(openHour, openMin, 0, 0);
     }
 
     // Parse lunch hour limits
-    const [lunchStartHour, lunchStartMin] = doctor.lunchStart.split(':').map(Number);
-    const [lunchEndHour, lunchEndMin] = doctor.lunchEnd.split(':').map(Number);
+    const [lunchStartHour, lunchStartMin] = (doctor.lunchStart || '13:00').split(':').map(Number);
+    const [lunchEndHour, lunchEndMin] = (doctor.lunchEnd || '14:00').split(':').map(Number);
     const lunchStart = new Date(startOfDay);
     lunchStart.setHours(lunchStartHour, lunchStartMin, 0, 0);
     const lunchEnd = new Date(startOfDay);
@@ -159,7 +159,7 @@ const updateQueuePredictions = async (doctorId, dateStr, ioInstance = null) => {
           // Stage 3 & 4: Python ML Prediction
           const nowHour = nextAvailableTime.getHours();
           const peakHourFlag = [10, 11, 12, 16, 17].includes(nowHour) ? 1 : 0;
-          const holidayFlag = doctor.specialHolidays.some(h => h.toDateString() === startOfDay.toDateString()) ? 1 : 0;
+          const holidayFlag = doctor.specialHolidays && doctor.specialHolidays.some(h => new Date(h).toDateString() === startOfDay.toDateString()) ? 1 : 0;
 
           const features = {
             queuePosition: positionInLine,
