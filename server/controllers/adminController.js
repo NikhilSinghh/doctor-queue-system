@@ -120,6 +120,7 @@ const getLiveQueue = async (req, res) => {
         queueList: shieldedQueue,
         lunchStart: doctor.lunchStart,
         lunchEnd: doctor.lunchEnd,
+        maxPatientsPerDay: doctor.maxPatientsPerDay || 30,
       },
     });
   } catch (error) {
@@ -516,17 +517,28 @@ const getMLStatus = async (req, res) => {
 
       if (avgQuery.length > 0) {
         const historicAverage = parseFloat(avgQuery[0].avgVal.toFixed(1));
+        const roundedAvg = Math.round(historicAverage);
         const diff = Math.abs(historicAverage - doctor.consultationDurationDefault);
 
-        if (diff >= 0.5) {
+        if (doctor.consultationDurationManualOverride !== true) {
+          // Automatically set as default
+          if (doctor.consultationDurationDefault !== roundedAvg) {
+            doctor.consultationDurationDefault = roundedAvg;
+            doctor.consultationDurationRecommended = undefined;
+            await doctor.save();
+          }
+        } else if (diff >= 0.5) {
+          // If manual override is active, provide a recommendation alert instead of overriding
           recommendation = {
             currentDefault: doctor.consultationDurationDefault,
-            suggested: Math.round(historicAverage),
+            suggested: roundedAvg,
             exactSuggested: historicAverage,
             totalSamples,
           };
-          doctor.consultationDurationRecommended = Math.round(historicAverage);
-          await doctor.save();
+          if (doctor.consultationDurationRecommended !== roundedAvg) {
+            doctor.consultationDurationRecommended = roundedAvg;
+            await doctor.save();
+          }
         }
       }
     }
@@ -597,6 +609,9 @@ const getDoctorSettings = async (req, res) => {
       success: true,
       data: {
         consultationDurationDefault: doctor.consultationDurationDefault,
+        consultationDurationManualOverride: doctor.consultationDurationManualOverride || false,
+        hospitalOpeningTime: doctor.hospitalOpeningTime || '09:00',
+        hospitalClosingTime: doctor.hospitalClosingTime || '17:00',
         maxPatientsPerDay: doctor.maxPatientsPerDay || 30,
         weeklyOff: doctor.weeklyOff,
         specialHolidays: doctor.specialHolidays,
@@ -612,11 +627,19 @@ const getDoctorSettings = async (req, res) => {
 // Update Doctor Settings
 const updateDoctorSettings = async (req, res) => {
   try {
-    const { doctorId, consultationDurationDefault, maxPatientsPerDay, weeklyOff, specialHolidays, bookingsEnabled } = req.body;
+    const { 
+      doctorId, consultationDurationDefault, consultationDurationManualOverride,
+      hospitalOpeningTime, hospitalClosingTime, maxPatientsPerDay, weeklyOff, 
+      specialHolidays, bookingsEnabled 
+    } = req.body;
+    
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found.' });
 
     if (consultationDurationDefault !== undefined) doctor.consultationDurationDefault = consultationDurationDefault;
+    if (consultationDurationManualOverride !== undefined) doctor.consultationDurationManualOverride = consultationDurationManualOverride;
+    if (hospitalOpeningTime !== undefined) doctor.hospitalOpeningTime = hospitalOpeningTime;
+    if (hospitalClosingTime !== undefined) doctor.hospitalClosingTime = hospitalClosingTime;
     if (maxPatientsPerDay !== undefined) doctor.maxPatientsPerDay = maxPatientsPerDay;
     if (weeklyOff !== undefined) doctor.weeklyOff = weeklyOff;
     if (specialHolidays !== undefined) doctor.specialHolidays = specialHolidays;

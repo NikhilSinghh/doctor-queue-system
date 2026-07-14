@@ -41,6 +41,7 @@ interface QueueData {
   lunchStart: string;
   lunchEnd: string;
   date?: string;
+  maxPatientsPerDay: number;
 }
 
 interface StoreState {

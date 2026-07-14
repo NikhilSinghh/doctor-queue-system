@@ -31,6 +31,10 @@ export default function MLConfig() {
   const [newHoliday, setNewHoliday] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [bookingsEnabled, setBookingsEnabled] = useState(true);
+  const [consultationDuration, setConsultationDuration] = useState(7);
+  const [consultationDurationManualOverride, setConsultationDurationManualOverride] = useState(false);
+  const [hospitalOpeningTime, setHospitalOpeningTime] = useState('09:00');
+  const [hospitalClosingTime, setHospitalClosingTime] = useState('17:00');
 
   const doctorId = user?.doctorId || '66914b48bcde36814b72648a';
 
@@ -61,6 +65,10 @@ export default function MLConfig() {
         setWeeklyOff(res.data.data.weeklyOff || [0]);
         setSpecialHolidays(res.data.data.specialHolidays.map((h: any) => new Date(h).toISOString().split('T')[0]) || []);
         setBookingsEnabled(res.data.data.bookingsEnabled !== false);
+        setConsultationDuration(res.data.data.consultationDurationDefault || 7);
+        setConsultationDurationManualOverride(res.data.data.consultationDurationManualOverride || false);
+        setHospitalOpeningTime(res.data.data.hospitalOpeningTime || '09:00');
+        setHospitalClosingTime(res.data.data.hospitalClosingTime || '17:00');
       }
     } catch (err) {
       console.error('Failed to load doctor settings');
@@ -121,7 +129,11 @@ export default function MLConfig() {
         maxPatientsPerDay: maxPatients,
         weeklyOff,
         specialHolidays,
-        bookingsEnabled
+        bookingsEnabled,
+        consultationDurationDefault: consultationDuration,
+        consultationDurationManualOverride,
+        hospitalOpeningTime,
+        hospitalClosingTime
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -289,6 +301,41 @@ export default function MLConfig() {
           <form onSubmit={handleSaveSettings} className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
             {/* Left inputs */}
             <div className="space-y-4">
+              {/* Consultation Duration */}
+              <div className="flex flex-col space-y-2.5 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-medium border border-slate-200/50 dark:border-slate-700/50">
+                <label className="text-xs font-bold text-slate-500 uppercase">Consultation Duration (Minutes)</label>
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox"
+                    id="autoMlDuration"
+                    checked={!consultationDurationManualOverride}
+                    onChange={(e) => setConsultationDurationManualOverride(!e.target.checked)}
+                    className="w-4 h-4 text-primaryBlue rounded focus:ring-primaryBlue accent-primaryBlue"
+                  />
+                  <label htmlFor="autoMlDuration" className="text-xs font-bold select-none text-slate-700 dark:text-slate-200 cursor-pointer">
+                    Use AI-predicted consultation duration
+                  </label>
+                </div>
+                {!consultationDurationManualOverride ? (
+                  <div className="text-xs text-primaryBlue font-semibold bg-primaryBlue/5 p-2 rounded">
+                    🤖 Currently using: <b>{consultationDuration} minutes</b> (Managed by Machine Learning Engine)
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2.5">
+                    <input 
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={consultationDuration}
+                      onChange={(e) => setConsultationDuration(parseInt(e.target.value))}
+                      className="neu-input w-24 py-1.5 text-xs text-center"
+                      required
+                    />
+                    <span className="text-xs text-slate-400">minutes (Manual Override)</span>
+                  </div>
+                )}
+              </div>
+
               <div className="flex flex-col space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase">Maximum Patient Appointments Per Day</label>
                 <input 
@@ -344,6 +391,33 @@ export default function MLConfig() {
 
             {/* Right Holiday settings */}
             <div className="space-y-4 flex flex-col">
+              {/* Working Hours */}
+              <div className="flex flex-col space-y-2 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-medium border border-slate-200/50 dark:border-slate-700/50">
+                <label className="text-xs font-bold text-slate-500 uppercase">Clinic Working Hours (From - To)</label>
+                <div className="grid grid-cols-2 gap-4 pt-1">
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Opening Time</span>
+                    <input 
+                      type="time"
+                      value={hospitalOpeningTime}
+                      onChange={(e) => setHospitalOpeningTime(e.target.value)}
+                      className="neu-input w-full px-3 py-2 text-xs"
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Closing Time</span>
+                    <input 
+                      type="time"
+                      value={hospitalClosingTime}
+                      onChange={(e) => setHospitalClosingTime(e.target.value)}
+                      className="neu-input w-full px-3 py-2 text-xs"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex flex-col space-y-1.5 flex-1">
                 <label className="text-xs font-bold text-slate-500 uppercase">Manage Holidays / Off Dates</label>
                 <div className="flex space-x-2">

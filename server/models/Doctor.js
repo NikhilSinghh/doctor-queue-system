@@ -49,6 +49,10 @@ const doctorSchema = new mongoose.Schema(
       default: 7, // Doctor-configured average consultation time (initial default is 7 minutes)
       min: 1,
     },
+    consultationDurationManualOverride: {
+      type: Boolean,
+      default: false,
+    },
     consultationDurationRecommended: {
       type: Number,
       min: 1,

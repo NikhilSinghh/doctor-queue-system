@@ -54,4 +54,27 @@ const restrictTo = (...roles) => {
   };
 };
 
-module.exports = { protect, restrictTo };
+const optionalProtect = async (req, res, next) => {
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_healthcare_key_123_abc');
+    const user = await User.findById(decoded.id);
+
+    if (user && user.status !== 'Suspended') {
+      req.user = user;
+    }
+    next();
+  } catch (error) {
+    next();
+  }
+};
+
+module.exports = { protect, restrictTo, optionalProtect };

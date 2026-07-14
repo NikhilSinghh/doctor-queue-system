@@ -272,14 +272,15 @@ const getMyNotifications = async (req, res) => {
 // Get Public Queue (Unauthenticated)
 const getPublicQueue = async (req, res) => {
   try {
-    const { doctorId } = req.query;
+    const { doctorId, date } = req.query;
     if (!doctorId) {
       return res.status(400).json({ success: false, message: 'Doctor ID is required.' });
     }
 
-    const todayStart = new Date();
+    const targetDate = date ? new Date(date) : new Date();
+    const todayStart = new Date(targetDate);
     todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
+    const todayEnd = new Date(targetDate);
     todayEnd.setHours(23, 59, 59, 999);
 
     const doctor = await Doctor.findById(doctorId);
@@ -327,6 +328,7 @@ const getPublicQueue = async (req, res) => {
         queueList: shieldedQueue,
         lunchStart: doctor.lunchStart,
         lunchEnd: doctor.lunchEnd,
+        maxPatientsPerDay: doctor.maxPatientsPerDay || 30,
       },
     });
   } catch (error) {

@@ -10,12 +10,12 @@ const {
   getPublicQueue,
   getDoctorProfile,
 } = require('../controllers/patientController');
-const { protect } = require('../middleware/auth');
+const { protect, optionalProtect } = require('../middleware/auth');
 
-// Public patient routes (unauthenticated)
+// Public patient routes (unauthenticated but optionally authenticated)
 router.get('/queue/public', getPublicQueue);
 router.get('/doctor/:id', getDoctorProfile);
-router.post('/book', bookAppointment);
+router.post('/book', optionalProtect, bookAppointment);
 
 router.use(protect); // protect all subsequent patient routes
 

@@ -389,6 +389,15 @@ export default function AdminDashboard() {
 
               <form onSubmit={handleWalkinSubmit} className="space-y-4 text-xs font-semibold">
                 
+                {queueData && queueData.queueList && queueData.maxPatientsPerDay && queueData.queueList.length >= queueData.maxPatientsPerDay && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-600 rounded-medium text-[11px] font-bold border border-amber-200 dark:border-amber-900/50 flex items-start space-x-2">
+                    <AlertOctagon size={16} className="shrink-0 text-amber-500 mt-0.5" />
+                    <span>
+                      ⚠️ Reminder: The maximum daily booking limit of {queueData.maxPatientsPerDay} patients has already been reached. Staff can override, but please confirm with the patient.
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex flex-col space-y-1">
                   <label className="text-slate-400 uppercase">Patient Full Name *</label>
                   <input 

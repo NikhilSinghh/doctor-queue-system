@@ -32,6 +32,7 @@ export default function BookAppointment() {
   const doctorId = '66914b48bcde36814b72648a'; 
   const [doctorProfile, setDoctorProfile] = useState<any>(null);
   const [dateValidationError, setDateValidationError] = useState('');
+  const [selectedDateQueueLength, setSelectedDateQueueLength] = useState(0);
 
   // Calendar states
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
@@ -124,6 +125,21 @@ export default function BookAppointment() {
       setIsBookingForSelf(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    if (!date) return;
+    const fetchSelectedDateQueue = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/patient/queue/public?doctorId=${doctorId}&date=${date}`);
+        if (res.data.success) {
+          setSelectedDateQueueLength(res.data.data.queueList?.length || 0);
+        }
+      } catch (err) {
+        console.error('Failed to fetch queue list for date:', date);
+      }
+    };
+    fetchSelectedDateQueue();
+  }, [date]);
 
 
 
@@ -518,9 +534,17 @@ export default function BookAppointment() {
                 <p className="text-xs text-rose-500 font-semibold mt-1">⚠️ {dateValidationError}</p>
               )}
               {date && !dateValidationError && (
-                <p className="text-xs text-emerald-500 font-semibold mt-1">
-                  ✓ Date Selected: {new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
+                <div>
+                  {selectedDateQueueLength >= (doctorProfile?.maxPatientsPerDay || 30) ? (
+                    <p className="text-xs text-rose-500 font-bold mt-1">
+                      🛑 Booking limit reached. The doctor accepts a maximum of {doctorProfile?.maxPatientsPerDay || 30} appointments per day. Online bookings are closed.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-emerald-500 font-semibold mt-1">
+                      ✓ Date Selected: {new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
@@ -576,9 +600,9 @@ export default function BookAppointment() {
 
             <button 
               type="submit" 
-              disabled={loading || !!dateValidationError || doctorProfile?.bookingsEnabled === false}
+              disabled={loading || !!dateValidationError || doctorProfile?.bookingsEnabled === false || selectedDateQueueLength >= (doctorProfile?.maxPatientsPerDay || 30)}
               className={`neu-btn w-full text-white flex items-center justify-center space-x-2 py-4 ${
-                (dateValidationError || doctorProfile?.bookingsEnabled === false) ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed opacity-50' : 'bg-primaryBlue hover:bg-opacity-95'
+                (dateValidationError || doctorProfile?.bookingsEnabled === false || selectedDateQueueLength >= (doctorProfile?.maxPatientsPerDay || 30)) ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed opacity-50' : 'bg-primaryBlue hover:bg-opacity-95'
               }`}
             >
               <Sparkles size={18} className="animate-pulse" />
