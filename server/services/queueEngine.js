@@ -121,9 +121,14 @@ const updateQueuePredictions = async (doctorId, dateStr, ioInstance = null) => {
 
     let nextAvailableTime = new Date(currentTime);
 
-    // Apply reported doctor delay to opening time if doctor hasn't arrived
-    if (queue.doctorDelay > 0 && queue.currentServingNumber === 0) {
+    // Apply reported doctor delay to patient timelines
+    if (queue.doctorDelay > 0) {
       nextAvailableTime = new Date(nextAvailableTime.getTime() + queue.doctorDelay * 60000);
+    }
+
+    // Apply manual lunch break delay to patient timelines
+    if (queue.lunchDelay > 0) {
+      nextAvailableTime = new Date(nextAvailableTime.getTime() + queue.lunchDelay * 60000);
     }
 
     // Feature accumulators for ML predictions

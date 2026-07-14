@@ -256,13 +256,13 @@ export default function AdminDashboard() {
             </div>
             <div className="flex flex-col gap-2">
               <button 
-                onClick={() => handleUpdateDoctorStatus('Available', delay, isLunch)} 
+                onClick={() => handleUpdateDoctorStatus('Available', delay, false)} 
                 className="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded text-xs font-bold border border-emerald-500/20"
               >
                 Available
               </button>
               <button 
-                onClick={() => handleUpdateDoctorStatus('Running Late', delay, isLunch)} 
+                onClick={() => handleUpdateDoctorStatus('Running Late', delay, false)} 
                 className="px-3 py-1 bg-amber-500/10 text-amber-500 rounded text-xs font-bold border border-amber-500/20"
               >
                 Running Late
