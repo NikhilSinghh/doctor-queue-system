@@ -144,10 +144,10 @@ export default function AdminDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
-        setDoctorStatus(res.data.data.doctorStatus || newStatus);
+        setDoctorStatus(res.data?.data?.doctorStatus || newStatus);
         setDelay(delayMinutes);
         setIsLunch(lunchValue);
-        setDefaultMode(isDefaultMode !== undefined ? isDefaultMode : res.data.data.defaultMode !== false);
+        setDefaultMode(isDefaultMode !== undefined ? isDefaultMode : (res.data?.data?.defaultMode !== false));
         fetchQueue();
       }
     } catch (err) {
