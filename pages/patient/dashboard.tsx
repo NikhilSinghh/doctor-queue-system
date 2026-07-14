@@ -81,6 +81,40 @@ export default function PatientDashboard() {
     ? myQueueItem.predictedWaitingTime 
     : null;
 
+  const getLunchStatusMessage = () => {
+    if (!queueData || !myQueueItem || !myQueueItem.predictedConsultationTime) return null;
+
+    const [lStartHour, lStartMin] = (queueData.lunchStart || '13:00').split(':').map(Number);
+    const [lEndHour, lEndMin] = (queueData.lunchEnd || '14:00').split(':').map(Number);
+
+    const apptTime = new Date(myQueueItem.predictedConsultationTime);
+    
+    // We construct target lunch Dates on the same calendar day as the appointment
+    const targetLunchStart = new Date(apptTime);
+    targetLunchStart.setHours(lStartHour, lStartMin, 0, 0);
+
+    const formatTime12h = (h: number, m: number) => {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const hr = h % 12 || 12;
+      const min = String(m).padStart(2, '0');
+      return `${hr}:${min} ${ampm}`;
+    };
+
+    const lunchRangeStr = `${formatTime12h(lStartHour, lStartMin)} - ${formatTime12h(lEndHour, lEndMin)}`;
+
+    // Case 1: Doctor is currently on lunch break status
+    if (queueData.doctorStatus === 'Lunch Break') {
+      return `🏥 The doctor is currently on a lunch break (${lunchRangeStr}). There are ${patientsAhead} patients ahead of you. The queue will resume shortly.`;
+    }
+
+    // Case 2: Patient's expected turn starts after the lunch hour starts
+    if (apptTime >= targetLunchStart) {
+      return `ℹ️ Doctor's lunch break (${lunchRangeStr}) is factored into your wait time. There are ${patientsAhead} patients ahead of you.`;
+    }
+
+    return null;
+  };
+
   return (
     <Layout>
       <div className="space-y-6 max-w-6xl mx-auto">
@@ -111,7 +145,7 @@ export default function PatientDashboard() {
             <div>
               <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Doctor Status</p>
               <h3 className="font-bold text-lg text-slate-800 dark:text-white">{queueData?.doctorStatus || 'Offline'}</h3>
-              {queueData && queueData.doctorStatus === 'Running Late' && queueData.doctorDelay > 0 ? (
+              {queueData && queueData.doctorDelay > 0 ? (
                 <p className="text-xs text-amber-500 font-semibold flex items-center space-x-1">
                   <AlertTriangle size={12} />
                   <span>Running Late: {queueData.doctorDelay} mins</span>
@@ -198,6 +232,13 @@ export default function PatientDashboard() {
                 </div>
               )}
             </div>
+
+            {/* Lunch Status Message Banner */}
+            {getLunchStatusMessage() && (
+              <div className="p-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg border border-amber-500/20 text-xs font-bold flex items-center gap-2">
+                <span>{getLunchStatusMessage()}</span>
+              </div>
+            )}
           </div>
         ) : (
           <div className="neu-flat p-8 text-center space-y-4">

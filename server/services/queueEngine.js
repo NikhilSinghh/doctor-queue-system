@@ -406,9 +406,6 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date(), queue = null) =
       return `Opens Today at ${formatTimeHelper(actualOpenHour, actualOpenMin)}`;
     }
 
-    if (currentMinutes >= lunchStartMinutes && currentMinutes < lunchEndMinutes) {
-      return 'Lunch Break';
-    }
   }
 
   // 4. Default to manual status

@@ -35,6 +35,8 @@ export default function MLConfig() {
   const [consultationDurationManualOverride, setConsultationDurationManualOverride] = useState(false);
   const [hospitalOpeningTime, setHospitalOpeningTime] = useState('09:00');
   const [hospitalClosingTime, setHospitalClosingTime] = useState('17:00');
+  const [lunchStart, setLunchStart] = useState('13:00');
+  const [lunchEnd, setLunchEnd] = useState('14:00');
 
   const doctorId = user?.doctorId || '66914b48bcde36814b72648a';
 
@@ -69,6 +71,8 @@ export default function MLConfig() {
         setConsultationDurationManualOverride(res.data.data.consultationDurationManualOverride || false);
         setHospitalOpeningTime(res.data.data.hospitalOpeningTime || '09:00');
         setHospitalClosingTime(res.data.data.hospitalClosingTime || '17:00');
+        setLunchStart(res.data.data.lunchStart || '13:00');
+        setLunchEnd(res.data.data.lunchEnd || '14:00');
       }
     } catch (err) {
       console.error('Failed to load doctor settings');
@@ -133,7 +137,9 @@ export default function MLConfig() {
         consultationDurationDefault: consultationDuration,
         consultationDurationManualOverride,
         hospitalOpeningTime,
-        hospitalClosingTime
+        hospitalClosingTime,
+        lunchStart,
+        lunchEnd
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -411,6 +417,33 @@ export default function MLConfig() {
                       type="time"
                       value={hospitalClosingTime}
                       onChange={(e) => setHospitalClosingTime(e.target.value)}
+                      className="neu-input w-full px-3 py-2 text-xs"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Lunch Break Hours */}
+              <div className="flex flex-col space-y-2 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-medium border border-slate-200/50 dark:border-slate-700/50">
+                <label className="text-xs font-bold text-slate-500 uppercase">Daily Lunch Break Hours (From - To)</label>
+                <div className="grid grid-cols-2 gap-4 pt-1">
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Lunch Start</span>
+                    <input 
+                      type="time"
+                      value={lunchStart}
+                      onChange={(e) => setLunchStart(e.target.value)}
+                      className="neu-input w-full px-3 py-2 text-xs"
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Lunch End</span>
+                    <input 
+                      type="time"
+                      value={lunchEnd}
+                      onChange={(e) => setLunchEnd(e.target.value)}
                       className="neu-input w-full px-3 py-2 text-xs"
                       required
                     />

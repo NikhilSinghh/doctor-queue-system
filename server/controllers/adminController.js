@@ -639,6 +639,8 @@ const getDoctorSettings = async (req, res) => {
         consultationDurationManualOverride: doctor.consultationDurationManualOverride || false,
         hospitalOpeningTime: doctor.hospitalOpeningTime || '09:00',
         hospitalClosingTime: doctor.hospitalClosingTime || '17:00',
+        lunchStart: doctor.lunchStart || '13:00',
+        lunchEnd: doctor.lunchEnd || '14:00',
         maxPatientsPerDay: doctor.maxPatientsPerDay || 30,
         weeklyOff: doctor.weeklyOff,
         specialHolidays: doctor.specialHolidays,
@@ -656,7 +658,7 @@ const updateDoctorSettings = async (req, res) => {
   try {
     const { 
       doctorId, consultationDurationDefault, consultationDurationManualOverride,
-      hospitalOpeningTime, hospitalClosingTime, maxPatientsPerDay, weeklyOff, 
+      hospitalOpeningTime, hospitalClosingTime, lunchStart, lunchEnd, maxPatientsPerDay, weeklyOff, 
       specialHolidays, bookingsEnabled 
     } = req.body;
     
@@ -667,6 +669,8 @@ const updateDoctorSettings = async (req, res) => {
     if (consultationDurationManualOverride !== undefined) doctor.consultationDurationManualOverride = consultationDurationManualOverride;
     if (hospitalOpeningTime !== undefined) doctor.hospitalOpeningTime = hospitalOpeningTime;
     if (hospitalClosingTime !== undefined) doctor.hospitalClosingTime = hospitalClosingTime;
+    if (lunchStart !== undefined) doctor.lunchStart = lunchStart;
+    if (lunchEnd !== undefined) doctor.lunchEnd = lunchEnd;
     if (maxPatientsPerDay !== undefined) doctor.maxPatientsPerDay = maxPatientsPerDay;
     if (weeklyOff !== undefined) doctor.weeklyOff = weeklyOff;
     if (specialHolidays !== undefined) doctor.specialHolidays = specialHolidays;
