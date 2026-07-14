@@ -412,9 +412,11 @@ const updateDoctorStatus = async (req, res) => {
       await queue.save();
     }
 
-    // Trigger recalcs
+    // Trigger recalcs in background (do not block HTTP response)
     const io = req.app.get('socketio');
-    await updateQueuePredictions(doctorId, todayStart.toDateString(), io);
+    updateQueuePredictions(doctorId, todayStart.toDateString(), io).catch(err => {
+      console.error('Queue Engine background prediction calculation failed:', err);
+    });
 
     const dynamicStatus = getDynamicDoctorStatus(doctor, new Date(), queue);
 

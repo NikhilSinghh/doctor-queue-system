@@ -35,6 +35,7 @@ export default function AdminDashboard() {
 
   // Doctor Delay / Lunch status state
   const [delay, setDelay] = useState(0);
+  const [sliderDelay, setSliderDelay] = useState(0);
   const [isLunch, setIsLunch] = useState(false);
   const [doctorStatus, setDoctorStatus] = useState('Available');
   const [defaultMode, setDefaultMode] = useState(true);
@@ -59,6 +60,7 @@ export default function AdminDashboard() {
       if (res.data.success) {
         setQueueData(res.data.data);
         setDelay(res.data.data.doctorDelay);
+        setSliderDelay(res.data.data.doctorDelay);
         setIsLunch(res.data.data.lunchDelay > 0);
         setDoctorStatus(res.data.data.doctorStatus);
         setDefaultMode(res.data.data.defaultMode !== false);
@@ -236,17 +238,23 @@ export default function AdminDashboard() {
             <div className="space-y-3">
               <div className="flex justify-between items-baseline">
                 <span className="text-xs text-slate-500">Current Delay:</span>
-                <span className="text-lg font-black text-rose-500">{delay} mins</span>
+                <span className="text-lg font-black text-rose-500">{sliderDelay} mins</span>
               </div>
               <input 
                 type="range" 
                 min="0" 
                 max="60" 
                 step="5"
-                value={delay} 
+                value={sliderDelay} 
                 onChange={(e) => {
+                  setSliderDelay(parseInt(e.target.value));
+                }}
+                onMouseUp={(e: any) => {
                   const val = parseInt(e.target.value);
-                  setDelay(val);
+                  handleUpdateDoctorStatus(doctorStatus, val, isLunch);
+                }}
+                onTouchEnd={(e: any) => {
+                  const val = parseInt(e.target.value);
                   handleUpdateDoctorStatus(doctorStatus, val, isLunch);
                 }}
                 className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primaryBlue"
