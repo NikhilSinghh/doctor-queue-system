@@ -248,7 +248,7 @@ const checkAndTrainModel = async () => {
   }
 };
 
-const getDynamicDoctorStatus = (doctor, targetDate = new Date()) => {
+const getDynamicDoctorStatus = (doctor, targetDate = new Date(), doctorDelay = 0) => {
   // 1. Holiday Check
   const dateStr = targetDate.toISOString().split('T')[0];
   const isHoliday = doctor.specialHolidays && doctor.specialHolidays.some(h => {
@@ -278,17 +278,24 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date()) => {
     const lunchStartMinutes = lunchStartHour * 60 + lunchStartMin;
     const lunchEndMinutes = lunchEndHour * 60 + lunchEndMin;
 
-    const formatTime12h = (time24) => {
-      if (!time24) return '';
-      const [hours, minutes] = time24.split(':').map(Number);
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      const displayHours = hours % 12 || 12;
-      const displayMinutes = minutes.toString().padStart(2, '0');
+    const formatTimeHelper = (h, m) => {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const displayHours = h % 12 || 12;
+      const displayMinutes = m.toString().padStart(2, '0');
       return `${displayHours}:${displayMinutes} ${ampm}`;
     };
 
     if (currentMinutes < openMinutes) {
-      return `🟢 Opens Today at ${formatTime12h(doctor.hospitalOpeningTime || '09:00')}`;
+      // Add doctor delay dynamically to the opening time
+      let actualOpenHour = openHour;
+      let actualOpenMin = openMin + (doctorDelay || 0);
+      if (actualOpenMin >= 60) {
+        actualOpenHour += Math.floor(actualOpenMin / 60);
+        actualOpenMin = actualOpenMin % 60;
+      }
+      actualOpenHour = actualOpenHour % 24;
+
+      return `Opens Today at ${formatTimeHelper(actualOpenHour, actualOpenMin)}`;
     }
 
     if (currentMinutes > closeMinutes) {
