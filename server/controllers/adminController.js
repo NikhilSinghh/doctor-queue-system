@@ -684,6 +684,62 @@ const updateDoctorSettings = async (req, res) => {
   }
 };
 
+const getPatientHistory = async (req, res) => {
+  try {
+    const { doctorId, date } = req.query;
+    if (!doctorId) return res.status(400).json({ success: false, message: 'Doctor ID is required.' });
+
+    // Calculate start and end of the target day in UTC matching Kolkata local time
+    const targetDate = date ? new Date(date) : new Date();
+
+    const startOfDay = new Date(targetDate);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    startOfDay.setUTCMinutes(-330); // Shift by 5.5 hours to represent local 00:00:00
+
+    const endOfDay = new Date(targetDate);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+    endOfDay.setUTCMinutes(-330); // Shift by 5.5 hours to represent local 23:59:59
+
+    // Find all appointments for that doctor on that date, sorted by queueNumber
+    const appointments = await Appointment.find({
+      doctorId,
+      appointmentDate: { $gte: startOfDay, $lte: endOfDay }
+    })
+      .sort({ queueNumber: 1 })
+      .populate('patientId', 'fullName mobileNumber gender dateOfBirth');
+
+    const data = appointments.map(appt => {
+      let age = 'N/A';
+      if (appt.patientId && appt.patientId.dateOfBirth) {
+        age = new Date().getFullYear() - new Date(appt.patientId.dateOfBirth).getFullYear();
+      }
+
+      return {
+        appointmentId: appt._id,
+        queueNumber: appt.queueNumber,
+        priority: appt.priority,
+        status: appt.status,
+        chiefComplaint: appt.chiefComplaint || 'No symptoms reported',
+        patient: appt.patientId ? {
+          fullName: appt.patientId.fullName,
+          mobileNumber: appt.patientId.mobileNumber,
+          gender: appt.patientId.gender,
+          age
+        } : {
+          fullName: 'Walk-In Patient',
+          mobileNumber: 'N/A',
+          gender: 'N/A',
+          age: 'N/A'
+        }
+      };
+    });
+
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getLiveQueue,
   startConsultation,
@@ -696,4 +752,5 @@ module.exports = {
   acceptRecommendation,
   getDoctorSettings,
   updateDoctorSettings,
+  getPatientHistory,
 };

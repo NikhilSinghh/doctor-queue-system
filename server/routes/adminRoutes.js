@@ -12,6 +12,7 @@ const {
   acceptRecommendation,
   getDoctorSettings,
   updateDoctorSettings,
+  getPatientHistory,
 } = require('../controllers/adminController');
 const { protect, restrictTo } = require('../middleware/auth');
 
@@ -21,6 +22,8 @@ router.get('/queue/live', protect, getLiveQueue);
 // Protect other clinical orchestration endpoints to staff only
 router.use(protect);
 router.use(restrictTo('Doctor', 'Receptionist', 'Super Admin'));
+
+router.get('/patients/history', getPatientHistory);
 
 router.post('/consultation/start', startConsultation);
 router.post('/consultation/complete', completeConsultation);

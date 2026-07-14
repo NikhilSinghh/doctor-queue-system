@@ -141,6 +141,7 @@ export default function Layout({ children }: LayoutProps) {
   const navItems = ['Doctor', 'Receptionist', 'Super Admin'].includes(user?.role || '') ? [
     { name: 'Queue Board', path: '/admin/dashboard', icon: Users },
     { name: 'Analytics Reports', path: '/admin/analytics', icon: BarChart3 },
+    { name: 'Patient History', path: '/admin/patient-history', icon: History },
     { name: 'AI Prediction Settings', path: '/admin/ml-settings', icon: Settings },
   ] : [
     { name: 'Dashboard', path: '/patient/dashboard', icon: Home },
