@@ -220,7 +220,7 @@ export default function AdminDashboard() {
               <button 
                 onClick={() => {
                   const targetStatus = isLunch ? 'Available' : 'Lunch Break';
-                  handleUpdateDoctorStatus(targetStatus, delay, !isLunch);
+                  handleUpdateDoctorStatus(targetStatus, delay, !isLunch, false);
                 }}
                 className={`neu-btn flex flex-col items-center justify-center p-4 space-y-2 h-24 ${
                   isLunch ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white'
@@ -251,11 +251,11 @@ export default function AdminDashboard() {
                 }}
                 onMouseUp={(e: any) => {
                   const val = parseInt(e.target.value);
-                  handleUpdateDoctorStatus(doctorStatus, val, isLunch);
+                  handleUpdateDoctorStatus(doctorStatus, val, isLunch, defaultMode);
                 }}
                 onTouchEnd={(e: any) => {
                   const val = parseInt(e.target.value);
-                  handleUpdateDoctorStatus(doctorStatus, val, isLunch);
+                  handleUpdateDoctorStatus(doctorStatus, val, isLunch, defaultMode);
                 }}
                 className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primaryBlue"
               />

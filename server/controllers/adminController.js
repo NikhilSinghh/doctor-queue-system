@@ -384,19 +384,25 @@ const updateDoctorStatus = async (req, res) => {
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found.' });
 
+    // 1. Process defaultMode if explicitly passed
     if (defaultMode !== undefined) {
       doctor.defaultMode = defaultMode;
       if (defaultMode) {
         doctor.status = 'Available';
       }
-      doctor.statusLastUpdatedAt = new Date();
-      await doctor.save();
-    } else if (status) {
-      doctor.defaultMode = false;
+    }
+
+    // 2. Process status change if explicitly passed
+    if (status !== undefined) {
       doctor.status = status;
       doctor.statusLastUpdatedAt = new Date();
-      await doctor.save();
+      // If a manual status is sent and defaultMode wasn't explicitly set to true, disable defaultMode
+      if (defaultMode === undefined) {
+        doctor.defaultMode = false;
+      }
     }
+
+    await doctor.save();
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
