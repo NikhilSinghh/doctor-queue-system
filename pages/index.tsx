@@ -204,7 +204,7 @@ export default function Home() {
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold text-slate-800 dark:text-white">Dr. Avinash Singh</h3>
-                  {publicQueue?.doctorDelay > 0 ? (
+                  {publicQueue?.doctorStatus === 'Running Late' && publicQueue?.doctorDelay > 0 ? (
                     <p className="text-xs text-orange-500 font-semibold">⚠️ Running Late: Delayed by {publicQueue.doctorDelay} mins</p>
                   ) : publicQueue?.doctorStatus === 'Lunch Break' ? (
                     <p className="text-xs text-amber-500 font-semibold">☕ On Lunch Break: {publicQueue.lunchStart || '13:00'} - {publicQueue.lunchEnd || '13:30'}</p>

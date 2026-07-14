@@ -256,7 +256,10 @@ export default function AdminDashboard() {
             </div>
             <div className="flex flex-col gap-2">
               <button 
-                onClick={() => handleUpdateDoctorStatus('Available', delay, false)} 
+                onClick={() => {
+                  setDelay(0);
+                  handleUpdateDoctorStatus('Available', 0, false);
+                }} 
                 className="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded text-xs font-bold border border-emerald-500/20"
               >
                 Available

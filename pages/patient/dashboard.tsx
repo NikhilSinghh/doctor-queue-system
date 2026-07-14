@@ -111,7 +111,7 @@ export default function PatientDashboard() {
             <div>
               <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Doctor Status</p>
               <h3 className="font-bold text-lg text-slate-800 dark:text-white">{queueData?.doctorStatus || 'Offline'}</h3>
-              {queueData && queueData.doctorDelay > 0 ? (
+              {queueData && queueData.doctorStatus === 'Running Late' && queueData.doctorDelay > 0 ? (
                 <p className="text-xs text-amber-500 font-semibold flex items-center space-x-1">
                   <AlertTriangle size={12} />
                   <span>Running Late: {queueData.doctorDelay} mins</span>
