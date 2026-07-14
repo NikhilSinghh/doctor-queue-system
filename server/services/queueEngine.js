@@ -102,22 +102,28 @@ const updateQueuePredictions = async (doctorId, dateStr, ioInstance = null) => {
     queue.estimatedAverageTime = fallbackWMA; // Display WMA on queue details
     queue.currentQueueLength = appointments.filter(a => a.status === 'Waiting').length;
 
+    const getKolkataTimeForHours = (baseDate, hour, minute) => {
+      const d = new Date(baseDate);
+      d.setUTCHours(0, 0, 0, 0);
+      d.setUTCMinutes(hour * 60 + minute - 330);
+      return d;
+    };
+
+    const [openHour, openMin] = (doctor.hospitalOpeningTime || '09:00').split(':').map(Number);
+    const openTimeLocal = getKolkataTimeForHours(startOfDay, openHour, openMin);
+
     // We calculate wait times starting from now
     let currentTime = new Date();
-    if (currentTime < startOfDay) {
+    if (currentTime < openTimeLocal) {
       // If clinic has not opened yet, start predictions from clinic open time
-      const [openHour, openMin] = (doctor.hospitalOpeningTime || '09:00').split(':').map(Number);
-      currentTime = new Date(startOfDay);
-      currentTime.setHours(openHour, openMin, 0, 0);
+      currentTime = openTimeLocal;
     }
 
     // Parse lunch hour limits
     const [lunchStartHour, lunchStartMin] = (doctor.lunchStart || '13:00').split(':').map(Number);
     const [lunchEndHour, lunchEndMin] = (doctor.lunchEnd || '14:00').split(':').map(Number);
-    const lunchStart = new Date(startOfDay);
-    lunchStart.setHours(lunchStartHour, lunchStartMin, 0, 0);
-    const lunchEnd = new Date(startOfDay);
-    lunchEnd.setHours(lunchEndHour, lunchEndMin, 0, 0);
+    const lunchStart = getKolkataTimeForHours(startOfDay, lunchStartHour, lunchStartMin);
+    const lunchEnd = getKolkataTimeForHours(startOfDay, lunchEndHour, lunchEndMin);
 
     let nextAvailableTime = new Date(currentTime);
 
@@ -256,11 +262,62 @@ const checkAndTrainModel = async () => {
 const getDynamicDoctorStatus = (doctor, targetDate = new Date(), queue = null) => {
   const doctorDelay = queue ? queue.doctorDelay : 0;
 
+  // Timezone helper to parse dates in Asia/Kolkata (IST) safely
+  const getKolkataTimeInfo = (d = new Date()) => {
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+      });
+      const parts = formatter.formatToParts(d);
+      const v = {};
+      parts.forEach(p => { v[p.type] = p.value; });
+
+      const year = parseInt(v.year);
+      const month = parseInt(v.month);
+      const day = parseInt(v.day);
+      let hour = parseInt(v.hour);
+      if (hour === 24) hour = 0;
+      const minute = parseInt(v.minute);
+
+      const dateUTC = new Date(Date.UTC(year, month - 1, day));
+      const dayOfWeek = dateUTC.getUTCDay();
+
+      return {
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        dayOfWeek,
+        dateString: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      };
+    } catch (e) {
+      return {
+        year: d.getFullYear(),
+        month: d.getMonth() + 1,
+        day: d.getDate(),
+        hour: d.getHours(),
+        minute: d.getMinutes(),
+        dayOfWeek: d.getDay(),
+        dateString: d.toISOString().split('T')[0]
+      };
+    }
+  };
+
+  const nowInfo = getKolkataTimeInfo(new Date());
+  const targetInfo = getKolkataTimeInfo(targetDate);
+
   // 1. Holiday Check
-  const dateStr = targetDate.toISOString().split('T')[0];
+  const dateStr = targetInfo.dateString;
   const isHoliday = doctor.specialHolidays && doctor.specialHolidays.some(h => {
     try {
-      return h && new Date(h).toISOString().split('T')[0] === dateStr;
+      return h && getKolkataTimeInfo(h).dateString === dateStr;
     } catch (e) {
       return false;
     }
@@ -268,14 +325,12 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date(), queue = null) =
   if (isHoliday) return 'Holiday';
 
   // 2. Weekly Off Check
-  const dayOfWeek = targetDate.getDay();
-  if (doctor.weeklyOff && doctor.weeklyOff.includes(dayOfWeek)) return 'Week Off';
+  if (doctor.weeklyOff && doctor.weeklyOff.includes(targetInfo.dayOfWeek)) return 'Week Off';
 
   // 3. Time-based checks (only apply if targetDate is TODAY)
-  const isToday = new Date().toDateString() === targetDate.toDateString();
+  const isToday = nowInfo.dateString === targetInfo.dateString;
   if (isToday) {
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const currentMinutes = nowInfo.hour * 60 + nowInfo.minute;
 
     // Parse Opening/Closing hours
     const [openHour, openMin] = (doctor.hospitalOpeningTime || '09:00').split(':').map(Number);
@@ -333,9 +388,8 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date(), queue = null) =
 
     // 2) Check if status was manually updated today
     if (doctor.statusLastUpdatedAt) {
-      const lastUpdateDate = new Date(doctor.statusLastUpdatedAt).toDateString();
-      const todayDate = new Date().toDateString();
-      if (lastUpdateDate === todayDate) {
+      const lastUpdateDate = getKolkataTimeInfo(doctor.statusLastUpdatedAt).dateString;
+      if (lastUpdateDate === nowInfo.dateString) {
         hasCheckedInToday = true;
       }
     }
