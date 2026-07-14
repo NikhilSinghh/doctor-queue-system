@@ -282,6 +282,18 @@ export default function Home() {
                 <Award size={16} className="text-emerald-500 shrink-0" />
                 <span className="text-xs font-medium">Mon-Sat: 11:00 AM to 03:30 PM (Sunday Closed)</span>
               </div>
+
+              <div className="pt-2">
+                <a 
+                  href="https://maps.app.goo.gl/iEtv2L3vmppAhnY3A" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="neu-btn inline-flex items-center space-x-2 bg-primaryBlue text-white py-3 px-5 font-bold text-xs"
+                >
+                  <MapPin size={14} />
+                  <span>Get Directions (Google Maps)</span>
+                </a>
+              </div>
             </div>
           </div>
 
