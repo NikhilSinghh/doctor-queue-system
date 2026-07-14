@@ -248,11 +248,17 @@ const checkAndTrainModel = async () => {
   }
 };
 
-const getDynamicDoctorStatus = (doctor, targetDate = new Date(), doctorDelay = 0) => {
+const getDynamicDoctorStatus = (doctor, targetDate = new Date(), queue = null) => {
+  const doctorDelay = queue ? queue.doctorDelay : 0;
+
   // 1. Holiday Check
   const dateStr = targetDate.toISOString().split('T')[0];
   const isHoliday = doctor.specialHolidays && doctor.specialHolidays.some(h => {
-    return new Date(h).toISOString().split('T')[0] === dateStr;
+    try {
+      return h && new Date(h).toISOString().split('T')[0] === dateStr;
+    } catch (e) {
+      return false;
+    }
   });
   if (isHoliday) return 'Holiday';
 
@@ -263,6 +269,23 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date(), doctorDelay = 0
   // 3. Time-based checks (only apply if targetDate is TODAY)
   const isToday = new Date().toDateString() === targetDate.toDateString();
   if (isToday) {
+    // Check if the doctor has checked in today
+    let hasCheckedInToday = false;
+
+    // 1) Check if queue has started serving patients
+    if (queue && queue.currentServingNumber > 0) {
+      hasCheckedInToday = true;
+    }
+
+    // 2) Check if status was manually updated today
+    if (doctor.statusLastUpdatedAt) {
+      const lastUpdateDate = new Date(doctor.statusLastUpdatedAt).toDateString();
+      const todayDate = new Date().toDateString();
+      if (lastUpdateDate === todayDate) {
+        hasCheckedInToday = true;
+      }
+    }
+
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -285,7 +308,7 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date(), doctorDelay = 0
       return `${displayHours}:${displayMinutes} ${ampm}`;
     };
 
-    if (currentMinutes < openMinutes) {
+    if (currentMinutes < openMinutes && !hasCheckedInToday) {
       // Add doctor delay dynamically to the opening time
       let actualOpenHour = openHour;
       let actualOpenMin = openMin + (doctorDelay || 0);

@@ -111,7 +111,7 @@ const getLiveQueue = async (req, res) => {
       success: true,
       data: {
         doctorId: queue.doctorId,
-        doctorStatus: getDynamicDoctorStatus(doctor, targetDate, queue ? queue.doctorDelay : 0),
+        doctorStatus: getDynamicDoctorStatus(doctor, targetDate, queue),
         currentServingNumber: queue.currentServingNumber,
         currentQueueLength: queue.currentQueueLength,
         estimatedAverageTime: queue.estimatedAverageTime,
@@ -385,6 +385,7 @@ const updateDoctorStatus = async (req, res) => {
 
     if (status) {
       doctor.status = status;
+      doctor.statusLastUpdatedAt = new Date();
       await doctor.save();
     }
 

@@ -86,6 +86,10 @@ const doctorSchema = new mongoose.Schema(
       enum: ['Available', 'Consulting', 'Running Late', 'Lunch Break', 'Emergency Break', 'Hospital Closed', 'Doctor Left', 'Holiday'],
       default: 'Available',
     },
+    statusLastUpdatedAt: {
+      type: Date,
+      default: Date.now,
+    },
     bookingsEnabled: {
       type: Boolean,
       default: true,
