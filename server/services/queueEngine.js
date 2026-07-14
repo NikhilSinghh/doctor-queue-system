@@ -313,7 +313,11 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date(), queue = null) =
       return `${displayHours}:${displayMinutes} ${ampm}`;
     };
 
-    if (currentMinutes < openMinutes && !hasCheckedInToday) {
+    if (currentMinutes > closeMinutes) {
+      return 'Clinic Closed';
+    }
+
+    if (!hasCheckedInToday) {
       // Add doctor delay dynamically to the opening time
       let actualOpenHour = openHour;
       let actualOpenMin = openMin + (doctorDelay || 0);
@@ -324,10 +328,6 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date(), queue = null) =
       actualOpenHour = actualOpenHour % 24;
 
       return `Opens Today at ${formatTimeHelper(actualOpenHour, actualOpenMin)}`;
-    }
-
-    if (currentMinutes > closeMinutes) {
-      return 'Clinic Closed';
     }
 
     if (currentMinutes >= lunchStartMinutes && currentMinutes < lunchEndMinutes) {
