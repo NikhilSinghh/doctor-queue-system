@@ -37,6 +37,7 @@ export default function AdminDashboard() {
   const [delay, setDelay] = useState(0);
   const [isLunch, setIsLunch] = useState(false);
   const [doctorStatus, setDoctorStatus] = useState('Available');
+  const [defaultMode, setDefaultMode] = useState(true);
   
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
@@ -60,6 +61,7 @@ export default function AdminDashboard() {
         setDelay(res.data.data.doctorDelay);
         setIsLunch(res.data.data.lunchDelay > 0);
         setDoctorStatus(res.data.data.doctorStatus);
+        setDefaultMode(res.data.data.defaultMode !== false);
       }
     } catch (err) {
       setError('Failed to fetch queue list.');
@@ -126,20 +128,26 @@ export default function AdminDashboard() {
   };
 
   // Update Status / Delay / Lunch
-  const handleUpdateDoctorStatus = async (newStatus: string, delayMinutes: number, lunchValue: boolean) => {
+  const handleUpdateDoctorStatus = async (newStatus: string, delayMinutes: number, lunchValue: boolean, isDefaultMode?: boolean) => {
     try {
-      const res = await axios.post('http://localhost:5000/api/admin/doctor/status', {
+      const payload: any = {
         doctorId,
         status: newStatus,
         delayMinutes,
         isLunch: lunchValue
-      }, {
+      };
+      if (isDefaultMode !== undefined) {
+        payload.defaultMode = isDefaultMode;
+      }
+
+      const res = await axios.post('http://localhost:5000/api/admin/doctor/status', payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
-        setDoctorStatus(newStatus);
+        setDoctorStatus(res.data.data.doctorStatus || newStatus);
         setDelay(delayMinutes);
         setIsLunch(lunchValue);
+        setDefaultMode(isDefaultMode !== undefined ? isDefaultMode : res.data.data.defaultMode !== false);
         fetchQueue();
       }
     } catch (err) {
@@ -254,19 +262,34 @@ export default function AdminDashboard() {
               <p className="text-2xl font-black text-slate-800 dark:text-white capitalize">{doctorStatus}</p>
               <p className="text-[10px] text-slate-400">Updates live for all patient devices</p>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5 w-36 shrink-0">
               <button 
-                onClick={() => {
-                  setDelay(0);
-                  handleUpdateDoctorStatus('Available', 0, false);
-                }} 
-                className="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded text-xs font-bold border border-emerald-500/20"
+                onClick={() => handleUpdateDoctorStatus('Available', delay, false, true)} 
+                className={`px-2.5 py-1.5 rounded text-[11px] font-bold border transition-all text-center ${
+                  defaultMode 
+                    ? 'bg-primaryBlue text-white border-primaryBlue shadow-sm'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                }`}
+              >
+                ⏱️ Default Mode
+              </button>
+              <button 
+                onClick={() => handleUpdateDoctorStatus('Available', delay, false, false)} 
+                className={`px-2.5 py-1.5 rounded text-[11px] font-bold border transition-all text-center ${
+                  !defaultMode && doctorStatus === 'Available'
+                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                }`}
               >
                 Available
               </button>
               <button 
-                onClick={() => handleUpdateDoctorStatus('Running Late', delay, false)} 
-                className="px-3 py-1 bg-amber-500/10 text-amber-500 rounded text-xs font-bold border border-amber-500/20"
+                onClick={() => handleUpdateDoctorStatus('Running Late', delay, false, false)} 
+                className={`px-2.5 py-1.5 rounded text-[11px] font-bold border transition-all text-center ${
+                  !defaultMode && doctorStatus === 'Running Late'
+                    ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                }`}
               >
                 Running Late
               </button>

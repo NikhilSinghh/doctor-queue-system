@@ -112,6 +112,7 @@ const getLiveQueue = async (req, res) => {
       data: {
         doctorId: queue.doctorId,
         doctorStatus: getDynamicDoctorStatus(doctor, targetDate, queue),
+        defaultMode: doctor.defaultMode !== false,
         currentServingNumber: queue.currentServingNumber,
         currentQueueLength: queue.currentQueueLength,
         estimatedAverageTime: queue.estimatedAverageTime,
@@ -379,11 +380,19 @@ const insertWalkIn = async (req, res) => {
 // Set Doctor Status / Delays
 const updateDoctorStatus = async (req, res) => {
   try {
-    const { doctorId, status, delayMinutes, isLunch } = req.body;
+    const { doctorId, status, delayMinutes, isLunch, defaultMode } = req.body;
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found.' });
 
-    if (status) {
+    if (defaultMode !== undefined) {
+      doctor.defaultMode = defaultMode;
+      if (defaultMode) {
+        doctor.status = 'Available';
+      }
+      doctor.statusLastUpdatedAt = new Date();
+      await doctor.save();
+    } else if (status) {
+      doctor.defaultMode = false;
       doctor.status = status;
       doctor.statusLastUpdatedAt = new Date();
       await doctor.save();
@@ -407,14 +416,23 @@ const updateDoctorStatus = async (req, res) => {
     const io = req.app.get('socketio');
     await updateQueuePredictions(doctorId, todayStart.toDateString(), io);
 
+    const dynamicStatus = getDynamicDoctorStatus(doctor, new Date(), queue);
+
     // Broadcast doctor status update
     if (io) {
-      io.emit('doctorStatusChanged', { doctorId, status: doctor.status, delayMinutes, isLunch });
+      io.emit('doctorStatusChanged', { doctorId, status: dynamicStatus, delayMinutes, isLunch });
     }
 
-    await logAudit(req.user._id, 'UPDATE_DOCTOR_STATUS', `Status: ${doctor.status}, Delay: ${delayMinutes}m`, req);
+    await logAudit(req.user._id, 'UPDATE_DOCTOR_STATUS', `Status: ${dynamicStatus}, Delay: ${delayMinutes}m`, req);
 
-    res.status(200).json({ success: true, message: 'Doctor status/delays updated.' });
+    res.status(200).json({ 
+      success: true, 
+      message: 'Doctor status/delays updated.',
+      data: {
+        doctorStatus: dynamicStatus,
+        defaultMode: doctor.defaultMode
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

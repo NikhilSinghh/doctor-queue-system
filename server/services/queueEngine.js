@@ -274,23 +274,6 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date(), queue = null) =
   // 3. Time-based checks (only apply if targetDate is TODAY)
   const isToday = new Date().toDateString() === targetDate.toDateString();
   if (isToday) {
-    // Check if the doctor has checked in today
-    let hasCheckedInToday = false;
-
-    // 1) Check if queue has started serving patients
-    if (queue && queue.currentServingNumber > 0) {
-      hasCheckedInToday = true;
-    }
-
-    // 2) Check if status was manually updated today
-    if (doctor.statusLastUpdatedAt) {
-      const lastUpdateDate = new Date(doctor.statusLastUpdatedAt).toDateString();
-      const todayDate = new Date().toDateString();
-      if (lastUpdateDate === todayDate) {
-        hasCheckedInToday = true;
-      }
-    }
-
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -317,8 +300,47 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date(), queue = null) =
       return 'Clinic Closed';
     }
 
+    // Default automated schedule calculations
+    if (doctor.defaultMode !== false) {
+      const totalOpenMinutes = openMinutes + (doctorDelay || 0);
+
+      if (currentMinutes < totalOpenMinutes) {
+        let actualOpenHour = openHour;
+        let actualOpenMin = openMin + (doctorDelay || 0);
+        if (actualOpenMin >= 60) {
+          actualOpenHour += Math.floor(actualOpenMin / 60);
+          actualOpenMin = actualOpenMin % 60;
+        }
+        actualOpenHour = actualOpenHour % 24;
+
+        return `Opens Today at ${formatTimeHelper(actualOpenHour, actualOpenMin)}`;
+      }
+
+      if (currentMinutes >= lunchStartMinutes && currentMinutes < lunchEndMinutes) {
+        return 'Lunch Break';
+      }
+
+      return 'Available';
+    }
+
+    // Manual Override Mode: Check if checked in today
+    let hasCheckedInToday = false;
+
+    // 1) Check if queue has started serving patients
+    if (queue && queue.currentServingNumber > 0) {
+      hasCheckedInToday = true;
+    }
+
+    // 2) Check if status was manually updated today
+    if (doctor.statusLastUpdatedAt) {
+      const lastUpdateDate = new Date(doctor.statusLastUpdatedAt).toDateString();
+      const todayDate = new Date().toDateString();
+      if (lastUpdateDate === todayDate) {
+        hasCheckedInToday = true;
+      }
+    }
+
     if (!hasCheckedInToday) {
-      // Add doctor delay dynamically to the opening time
       let actualOpenHour = openHour;
       let actualOpenMin = openMin + (doctorDelay || 0);
       if (actualOpenMin >= 60) {

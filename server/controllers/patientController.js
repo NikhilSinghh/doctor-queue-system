@@ -320,6 +320,7 @@ const getPublicQueue = async (req, res) => {
       data: {
         doctorId: queue.doctorId,
         doctorStatus: getDynamicDoctorStatus(doctor, targetDate, queue),
+        defaultMode: doctor.defaultMode !== false,
         currentServingNumber: queue.currentServingNumber,
         currentQueueLength: queue.currentQueueLength,
         estimatedAverageTime: queue.estimatedAverageTime,

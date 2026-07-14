@@ -90,6 +90,10 @@ const doctorSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    defaultMode: {
+      type: Boolean,
+      default: true,
+    },
     bookingsEnabled: {
       type: Boolean,
       default: true,
