@@ -278,7 +278,20 @@ const getDynamicDoctorStatus = (doctor, targetDate = new Date()) => {
     const lunchStartMinutes = lunchStartHour * 60 + lunchStartMin;
     const lunchEndMinutes = lunchEndHour * 60 + lunchEndMin;
 
-    if (currentMinutes < openMinutes || currentMinutes > closeMinutes) {
+    const formatTime12h = (time24) => {
+      if (!time24) return '';
+      const [hours, minutes] = time24.split(':').map(Number);
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      const displayMinutes = minutes.toString().padStart(2, '0');
+      return `${displayHours}:${displayMinutes} ${ampm}`;
+    };
+
+    if (currentMinutes < openMinutes) {
+      return `🟢 Opens Today at ${formatTime12h(doctor.hospitalOpeningTime || '09:00')}`;
+    }
+
+    if (currentMinutes > closeMinutes) {
       return 'Clinic Closed';
     }
 
