@@ -4,11 +4,11 @@ import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useStore } from '../store/useStore';
-import { CalendarRange, Clock, Users, MapPin, Phone, ShieldCheck, Activity, Award, LogIn } from 'lucide-react';
+import { CalendarRange, Clock, Users, MapPin, Phone, ShieldCheck, Activity, Award, LogIn, Moon, Sun } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
-  const { token, user } = useStore();
+  const { token, user, theme, setTheme } = useStore();
   const [publicQueue, setPublicQueue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -87,7 +87,17 @@ export default function Home() {
           </div>
 
           {/* Right Header Navigation */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            {mounted && (
+              <button 
+                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} 
+                className="p-2.5 rounded-medium bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-350 hover:bg-slate-200 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center shrink-0"
+                aria-label="Toggle Dark Mode"
+              >
+                {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+              </button>
+            )}
+
             {mounted && token && user ? (
               <Link href={user.role === 'Patient' ? '/patient/dashboard' : '/admin/dashboard'} className="bg-[#5A8DEE] hover:bg-opacity-95 text-white px-5 py-2.5 rounded-medium font-bold text-xs shadow-md transition-all">
                 Staff Dashboard
@@ -204,7 +214,7 @@ export default function Home() {
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold text-slate-800 dark:text-white">Dr. Avinash Singh</h3>
-                  {publicQueue?.doctorStatus === 'Running Late' && publicQueue?.doctorDelay > 0 ? (
+                  {publicQueue?.doctorDelay > 0 ? (
                     <p className="text-xs text-orange-500 font-semibold">⚠️ Running Late: Delayed by {publicQueue.doctorDelay} mins</p>
                   ) : publicQueue?.doctorStatus === 'Lunch Break' ? (
                     <p className="text-xs text-amber-500 font-semibold">☕ On Lunch Break: {publicQueue.lunchStart || '13:00'} - {publicQueue.lunchEnd || '13:30'}</p>
